@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/AppStoreConnect.Client/AppStoreConnect.Client.csproj" />
+  <Project Path="tests/AppStoreConnect.Client.Tests/AppStoreConnect.Client.Tests.csproj" />
+</Solution>
+

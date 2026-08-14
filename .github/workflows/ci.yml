@@ -1,0 +1,18 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet restore AppStoreConnect.Client.slnx
+      - run: dotnet test AppStoreConnect.Client.slnx --configuration Release --no-restore
+      - run: dotnet pack src/AppStoreConnect.Client/AppStoreConnect.Client.csproj --configuration Release --no-restore --output artifacts
+
