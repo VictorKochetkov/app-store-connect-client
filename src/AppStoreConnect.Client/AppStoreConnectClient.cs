@@ -1,7 +1,7 @@
+using System.Net.Http.Headers;
 using System.Text.Json;
 using AppStoreConnect.Client.Infrastructure;
 using AppStoreConnect.Client.Models;
-using RestSharp;
 
 namespace AppStoreConnect.Client;
 
@@ -25,7 +25,7 @@ public sealed class AppStoreConnectClient : BaseRestService, IAppStoreConnectCli
         HttpClient httpClient,
         AppStoreConnectClientOptions options,
         TimeProvider? timeProvider = null)
-        : base(CreateRestClient(httpClient, options))
+        : base(httpClient, GetBaseUrl(options))
     {
         tokenProvider = new AppStoreConnectTokenProvider(
             options,
@@ -39,11 +39,15 @@ public sealed class AppStoreConnectClient : BaseRestService, IAppStoreConnectCli
     {
         ValidateRequiredValue(bundleId, nameof(bundleId));
 
+        using var request = CreateRequest(
+            HttpMethod.Get,
+            "v1/apps",
+            ("filter[bundleId]", bundleId),
+            ("limit", "1"));
         var response = await ExecuteAsync<AppStoreResourceCollection<AppStoreAppAttributes>>(
-            new RestRequest("v1/apps", Method.Get)
-                .AddQueryParameter("filter[bundleId]", bundleId)
-                .AddQueryParameter("limit", 1),
-            cancellationToken).ConfigureAwait(false);
+                request,
+                cancellationToken)
+            .ConfigureAwait(false);
         var app = response.Data.FirstOrDefault();
 
         return app == null
@@ -63,10 +67,13 @@ public sealed class AppStoreConnectClient : BaseRestService, IAppStoreConnectCli
     {
         ValidateRequiredValue(betaGroupId, nameof(betaGroupId));
 
+        using var request = CreateRequest(
+            HttpMethod.Get,
+            $"v1/betaGroups/{Uri.EscapeDataString(betaGroupId)}");
         var response = await ExecuteAsync<AppStoreResourceResponse<BetaGroupAttributes>>(
-            new RestRequest("v1/betaGroups/{groupId}", Method.Get)
-                .AddUrlSegment("groupId", betaGroupId),
-            cancellationToken).ConfigureAwait(false);
+                request,
+                cancellationToken)
+            .ConfigureAwait(false);
 
         return new TestFlightBetaGroup(
             response.Data.Id,
@@ -122,11 +129,13 @@ public sealed class AppStoreConnectClient : BaseRestService, IAppStoreConnectCli
 
     /// <inheritdoc />
     protected override Task BeforeRequestAsync(
-        RestRequest request,
+        HttpRequestMessage request,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        request.AddOrUpdateHeader("Authorization", $"Bearer {tokenProvider.CreateToken()}");
+        request.Headers.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            tokenProvider.CreateToken());
         return Task.CompletedTask;
     }
 
@@ -145,16 +154,18 @@ public sealed class AppStoreConnectClient : BaseRestService, IAppStoreConnectCli
         ValidateRequiredValue(appId, nameof(appId));
         ValidateRequiredValue(betaGroupId, nameof(betaGroupId));
 
-        var response = await ExecuteAsync<TestFlightBuildsResponse>(
-            new RestRequest("v1/builds", Method.Get)
-                .AddQueryParameter("filter[app]", appId)
-                .AddQueryParameter("filter[betaGroups]", betaGroupId)
-                .AddQueryParameter("filter[processingState]", ValidProcessingState)
-                .AddQueryParameter("filter[expired]", false)
-                .AddQueryParameter("include", "preReleaseVersion,buildBetaDetail")
-                .AddQueryParameter("sort", "-uploadedDate")
-                .AddQueryParameter("limit", 50),
-            cancellationToken).ConfigureAwait(false);
+        using var request = CreateRequest(
+            HttpMethod.Get,
+            "v1/builds",
+            ("filter[app]", appId),
+            ("filter[betaGroups]", betaGroupId),
+            ("filter[processingState]", ValidProcessingState),
+            ("filter[expired]", "false"),
+            ("include", "preReleaseVersion,buildBetaDetail"),
+            ("sort", "-uploadedDate"),
+            ("limit", "50"));
+        var response = await ExecuteAsync<TestFlightBuildsResponse>(request, cancellationToken)
+            .ConfigureAwait(false);
 
         return response.Data
             .Where(build => !build.Attributes.Expired)
@@ -249,31 +260,15 @@ public sealed class AppStoreConnectClient : BaseRestService, IAppStoreConnectCli
             build.ExternalBuildState);
 
     /// <summary>
-    /// Creates a RestSharp client without taking ownership of the supplied HTTP client.
+    /// Gets and validates the configured App Store Connect base address.
     /// </summary>
-    /// <param name="httpClient">Application-managed HTTP client.</param>
     /// <param name="options">Client configuration.</param>
-    /// <returns>Configured REST client.</returns>
-    private static RestClient CreateRestClient(
-        HttpClient httpClient,
-        AppStoreConnectClientOptions options)
+    /// <returns>Configured API base address.</returns>
+    private static Uri GetBaseUrl(AppStoreConnectClientOptions options)
     {
-        ArgumentNullException.ThrowIfNull(httpClient);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(options.BaseUrl);
-
-        if (!options.BaseUrl.IsAbsoluteUri)
-        {
-            throw new ArgumentException("BaseUrl must be absolute.", nameof(options));
-        }
-
-        return new RestClient(
-            httpClient,
-            new RestClientOptions
-            {
-                BaseUrl = options.BaseUrl,
-            },
-            disposeHttpClient: false);
+        return options.BaseUrl;
     }
 
     /// <summary>
