@@ -71,6 +71,9 @@ internal sealed class TestFlightBuildAttributes
     [JsonPropertyName("uploadedDate")]
     public DateTimeOffset UploadedDate { get; init; }
 
+    [JsonPropertyName("expirationDate")]
+    public DateTimeOffset? ExpirationDate { get; init; }
+
     [JsonPropertyName("expired")]
     public bool Expired { get; init; }
 
@@ -121,4 +124,5 @@ internal sealed record TestFlightBuildCandidate(
     string BuildNumber,
     DateTimeOffset UploadedDate,
     string ProcessingState,
-    string? ExternalBuildState);
+    string? ExternalBuildState,
+    DateTimeOffset? ExpirationDate);
