@@ -66,6 +66,9 @@ public sealed class AppStoreConnectClientTests
         Assert.AreEqual("14.0.5", result.Version);
         Assert.AreEqual("105", result.BuildNumber);
         Assert.AreEqual("IN_BETA_TESTING", result.ExternalBuildState);
+        Assert.AreEqual(
+            new DateTimeOffset(2026, 9, 12, 12, 0, 0, TimeSpan.Zero),
+            result.ExpirationDate);
         Assert.AreEqual(3, requests.Count);
         Assert.IsTrue(Uri.UnescapeDataString(requests[0].Uri.Query)
             .Contains("filter[bundleId]=com.example.app", StringComparison.Ordinal));
@@ -273,6 +276,7 @@ public sealed class AppStoreConnectClientTests
               "attributes": {
                 "version": "105",
                 "uploadedDate": "2026-08-12T12:00:00Z",
+                "expirationDate": "2026-09-12T12:00:00Z",
                 "expired": false,
                 "processingState": "VALID"
               },
