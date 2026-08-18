@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>AppStoreConnect.Client</PackageId>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <Authors>Victor Kochetkov</Authors>
     <Description>Typed .NET REST client for App Store Connect and public TestFlight releases.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
