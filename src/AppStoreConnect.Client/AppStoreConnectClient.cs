@@ -208,7 +208,8 @@ public sealed class AppStoreConnectClient : BaseRestService, IAppStoreConnectCli
                 build.Attributes.BuildNumber,
                 build.Attributes.UploadedDate,
                 build.Attributes.ProcessingState,
-                betaDetails?.ExternalBuildState);
+                betaDetails?.ExternalBuildState,
+                build.Attributes.ExpirationDate);
     }
 
     /// <summary>
@@ -257,7 +258,8 @@ public sealed class AppStoreConnectClient : BaseRestService, IAppStoreConnectCli
             build.BuildNumber,
             build.UploadedDate,
             build.ProcessingState,
-            build.ExternalBuildState);
+            build.ExternalBuildState,
+            build.ExpirationDate);
 
     /// <summary>
     /// Gets and validates the configured App Store Connect base address.
